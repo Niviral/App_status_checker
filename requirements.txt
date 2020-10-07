@@ -1,0 +1,4 @@
+asyncio
+requests
+sqlalchemy
+mysql-connector-python
