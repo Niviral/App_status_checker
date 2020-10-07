@@ -6,14 +6,6 @@ from datetime import date, datetime
 import requests
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, create_engine
 
-
-###   Requirements.txt   ###
-## asyncio                ##
-## requests               ##
-## sqlalchemy             ##
-## mysql-connector-python ##
-############################
-
 logging.basicConfig(filename='OvRuns.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
 
 
