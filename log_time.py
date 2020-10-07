@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from datetime import datetime
+import sys
+from datetime import date, datetime
 
 import requests
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, create_engine
@@ -21,7 +22,7 @@ PROD: dict={
     'PROD' : 'https://search.tme.eu:8443/version',
     'RC' : 'https://rc.search.tme.eu:8443/version',
     'STAGING' :'https://search.staging.tme3c.com:3666/version',
-    # 'DEVEL':'https://search.devel.tme3c.com:3666/version',  ## commented until exeption will be writen
+    'DEVEL':'https://search.devel.tme3c.com:3666/version',  ## commented until exeption will be writen
     'TEST':'https://search.test.tme3c.com:3666/version'
 }
 
@@ -54,33 +55,51 @@ class OvRunCheck(object):
 
     @property
     def current_time(self):
-        response = requests.get(self.server).json()
-        current_time = datetime.fromisoformat(response['data_version']['computed_refresh_date'])
+        try:
+            response = requests.get(self.server).json()
+        except requests.exceptions.SSLError:
+            logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
+            response = None
+
+        if response:
+            current_time = datetime.fromisoformat(response['data_version']['computed_refresh_date'])
+        else:
+            current_time=datetime.fromisoformat('9999-12-12T00:00:00.000+00:00')
         return current_time
-        
+
     @property
     def now(self):
-        response = requests.get(self.server).json()
-        now = datetime.fromisoformat(response['data_version']['now'])
+        try:
+            response = requests.get(self.server).json()
+        except requests.exceptions.SSLError:
+            logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
+            response = None
+
+        if response:
+            now = datetime.fromisoformat(response['data_version']['now'])
+        else:
+            now = datetime.fromisoformat('8999-12-12T00:00:00.000+00:00')
         return now
-    
+
     def show_time(self):
         string_time = self.current_time.strftime(self.format)
         print(string_time)
 
     def time_diff(self):
         if self.last_run < self.current_time:
-            diff = self.current_time - self.last_run
-            ins = hearthbeat.insert().values(server=self.name, date_time=self.now, time_diff=str(diff), seconds_diff=diff.total_seconds())
-            conn = engine.connect()
-            insert = conn.execute(ins)
-            insert.close()
-            logging.info(f'{self.name} - {self.now} - OV run detected, previous run lasted {str(diff)}')
-            self.last_run = self.current_time
+            try:
+                diff = self.current_time - self.last_run
+                ins = hearthbeat.insert().values(server=self.name, date_time=self.now, time_diff=str(diff), seconds_diff=diff.total_seconds())
+                conn = engine.connect()
+                insert = conn.execute(ins)
+                insert.close()
+                logging.info(f'{self.name} - {self.now} - OV run detected, previous run lasted {str(diff)}')
+                self.last_run = self.current_time
+            except:
+                logging.error(f'{self.name} - Unknow error {sys.exc_info()[0]}') 
+                #Exeption need to be replace with more specific, currently don't know what can happen here
         else:
-            #Return as print during development, later will be changed for log/stdout
             logging.info(f'{self.name} - {self.now} - No run occured, waiting 60s')
-        ##Exeption for bad ssl needed? I Thik yes##
 
 
 serverlist: list = []
