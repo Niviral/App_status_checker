@@ -1,20 +1,25 @@
 import asyncio
 import logging
+import json
+from os import name
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import requests
-from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, create_engine
+from sqlalchemy import (Column, DateTime, Integer, MetaData, String, Table,
+                        create_engine)
 
 logging.basicConfig(filename='OvRuns.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-
+##RocketChat WeebHook##
+url = 'https://rocket.tme.eu/hooks/xK7gec4wKnT9AkxNr/ozdwtsKPkKX5BPybqYDHQcW29FnyKdpnqK9Do5bFQAgX5kXW'
+headers: dict = {'content-type': 'application/json'}
 
 PROD: dict={
     
     'PROD' : 'https://search.tme.eu:8443/version',
     'RC' : 'https://rc.search.tme.eu:8443/version',
     'STAGING' :'https://search.staging.tme3c.com:3666/version',
-    'DEVEL':'https://search.devel.tme3c.com:3666/version',  ## commented until exeption will be writen
+    'DEVEL':'http://search.devel.tme3c.com:3666/version',  ## commented until exeption will be writen
     'TEST':'https://search.test.tme3c.com:3666/version'
 }
 
@@ -31,7 +36,7 @@ hearthbeat = Table('version_hearthbeat', metadata,
 
 class OvRunCheck(object):
 
-    def __init__(self,name: str,server: str, format: str='%Y-%m-%d %H:%M:%S', last_run: str='1920-01-01T00:00:00.000+02:00'):
+    def __init__(self,name: str,server: str, format: str='%Y-%m-%d %H:%M:%S', last_run: str='1920-01-01T00:00:00.000+02:00', msg: int= 5):
         """
         Timer class used to check content of remote adress 
 
@@ -39,17 +44,23 @@ class OvRunCheck(object):
         :param server(str): HTTP/HTTPS adress used in GET request 
         :param format(str): Default: 'YYYY-MM-DD HH:MM:SS' Format used in .strftime to diplay current time in human form.
         :param last_run(str): Default '1920-01-01 00:00:00' DateTime from which diff will be calulated.
+        :param db_save(boolean): Define if changes in computed time should be looged to DB
+        :param msg(int): Allow to specify how often notification should be send via RocketChat, (Default 5min)
+        :param inc(int): variable used for incrementation. 
         """
         self.name = name
         self.server = server
         self.format = format
         self.last_run = datetime.fromisoformat(last_run)
+        self.db_save = None
+        self.msg = 5
+        self.inc = 5
 
     @property
     def current_time(self):
         try:
             response = requests.get(self.server).json()
-        except requests.exceptions.SSLError:
+        except requests.exceptions.RequestException:
             logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
             response = None
 
@@ -63,7 +74,7 @@ class OvRunCheck(object):
     def now(self):
         try:
             response = requests.get(self.server).json()
-        except requests.exceptions.SSLError:
+        except requests.exceptions.RequestException:
             logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
             response = None
 
@@ -85,13 +96,26 @@ class OvRunCheck(object):
                 conn = engine.connect()
                 insert = conn.execute(ins)
                 insert.close()
-                logging.info(f'{self.name} - {self.now} - OV run detected, previous run lasted {str(diff)}')
+                msg= f'{self.name} - OV run detected, previous run lasted {str(diff)}'
+                logging.info(msg)
+                print(msg)
                 self.last_run = self.current_time
+                self.inc = self.msg
             except:
-                logging.error(f'{self.name} - Unknow error {sys.exc_info()[0]}') 
+                errmsg=f'{self.name} - Unknow error {sys.exc_info()[0]}'
+                logging.error(errmsg) 
+                print(errmsg)
                 #Exeption need to be replace with more specific, currently don't know what can happen here
         else:
-            logging.info(f'{self.name} - {self.now} - No run occured, waiting 60s')
+            ### This should be split into smaller method/fuction with more specific exeptions.
+            ### I know it work but it is horrible
+            diffr = self.now - self.last_run
+            if (diffr > timedelta(minutes=15) and self.inc%self.msg==0):
+                requests.post(url, data=json.dumps({"text":f"{self.name} - Ostatni przebieg OV {str(diffr)} temu"}), headers= headers)
+            msg = f'{self.name} - No run occured, waiting 60s'
+            logging.info(msg)
+            print(msg)
+            self.inc += 1
 
 
 serverlist: list = []
