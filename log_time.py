@@ -2,14 +2,13 @@ import asyncio
 import json
 import logging
 import sys
-from datetime import date, datetime, timedelta
-
+from datetime import datetime, timedelta
+from inspect import signature
 import requests
 import urllib3
 import yaml
 from sqlalchemy import (Column, DateTime, Integer, MetaData, String, Table,
                         create_engine)
-from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.sqltypes import Boolean
 
 urllib3.disable_warnings() #dissabling warings about lacking of HTTPS
@@ -64,9 +63,10 @@ class OvRunCheck(object):
         self.notification_treshold = notification_treshold
         self.inc = notification_treshold
 
-    #add __str__ method later.
     def __str__(self) -> str:
-        pass
+        fields = signature(self.__init__).parameters
+        values = ', '.join(str(getattr(self, f))for f in fields)
+        return f'''{self.name}({values})'''
 
     def __repr__(self) -> str:
         return str(self.__dict__)
@@ -146,6 +146,9 @@ for key in config['servers']:
         notification=config['servers'][key]['notification'],
         msg_interval=config['servers'][key]['msg_interval'],
         notification_treshold=config['servers'][key]['notification_treshold']))
+print('Loaded objects:')
+for o in serverlist:
+    print(o)
 
 loop = asyncio.get_event_loop()
 
