@@ -1,0 +1,12 @@
+servers:
+  PROD:
+    name: PROD
+    adress: example.com
+    db_save: true
+    notification: true
+    notification_treshold: 15
+    msg_interval: 5
+logs:
+  filename: OvRuns.log
+  filemode: a
+  level: logging.INFO
