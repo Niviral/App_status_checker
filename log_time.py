@@ -178,7 +178,7 @@ async def while_loop():
             server.time_diff()
         end = datetime.now()
         elaps = end - start
-        await asyncio.sleep(60-elaps.total_seconds())
+        await asyncio.sleep(config['main']['checkup_interval']-elaps.total_seconds())
 
 loop.create_task(while_loop())
 loop.run_forever()
