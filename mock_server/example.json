@@ -1,28 +1,28 @@
 {
-    "version_info": {
-        "version": "3.0",
-        "worker_id": 7631,
-        "pm_id": "2",
-        "app_start_date": "2020-09-24T08:04:41.748+02:00"
-    },
-    "server_status": {
-        "host": "dune2",
-        "health": "perfectly"
+    "data_version": {
+        "computed_refresh_date": "2020-11-13T17:30:02.361571+00:00",
+        "db4_refresh_date": "2020-11-13T17:30:02.361559+00:00",
+        "hana_refresh_date": "2020-11-13T17:30:02.361566+00:00",
+        "now": "2020-11-13T17:30:02.361576+00:00",
+        "parcat_external_date": "2020-11-13T17:30:02.361530+00:00"
     },
     "engine_version": {
-        "npm": "6.13.4",
-        "node": "v10.18.1",
-        "branch": null,
-        "tag": "2.66.4",
-        "commit_hash": "078c78e87977d92b74c6cb8b8fe92d2d10acfc4c",
+        "branch": "null",
         "build_date": "2020-09-24T08:04:01.942634404 +02:00",
-        "build_timestamp": "1600927441"
+        "build_timestamp": "1600927441",
+        "commit_hash": "078c78e87977d92b74c6cb8b8fe92d2d10acfc4c",
+        "node": "v10.18.1",
+        "npm": "6.13.4",
+        "tag": "2.66.4"
     },
-    "data_version": {
-        "external_date": "2020-09-28T11:00:05.160+02:00",
-        "db_refresh_date": "2020-09-28T14:41:18.060+02:00",
-        "warehouse_refresh_date": "2020-09-28T14:41:18.362+02:00",
-        "computed_refresh_date": "2020-09-28T14:42:49.367+02:00",
-        "now": "2020-09-28T14:49:43.473+02:00"
+    "server_status": {
+        "health": "perfectly",
+        "host": "diuna2"
+    },
+    "version_info": {
+        "app_start_date": "2020-09-24T08:04:41.748+02:00",
+        "pm_id": "2",
+        "version": "3.0",
+        "worker_id": 30
     }
 }
