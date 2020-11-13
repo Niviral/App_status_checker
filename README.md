@@ -43,3 +43,4 @@ main:                                       #Time interval of server checkups (i
 ```
 
 
+As application is no longer needed i won't be developing it further hence repository will be Archived.
