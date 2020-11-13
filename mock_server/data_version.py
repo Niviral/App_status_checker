@@ -11,7 +11,7 @@ def version_generator():
             "app_start_date": "2020-09-24T08:04:41.748+02:00"
         },
         "server_status": {
-            "host": "diuna2",
+            "host": "dune2",
             "health": "perfectly"
         },
         "engine_version": {
@@ -40,9 +40,9 @@ def version_generator():
 
     dictionary={
         "data_version":{
-            "parcat_external_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
-            "db4_refresh_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
-            "hana_refresh_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
+            "external_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
+            "db_refresh_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
+            "warehouse_refresh_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
             "computed_refresh_date": (datetime.now(timezone.utc)+ timedelta(minutes=int(uniform(0,min)), seconds=int(uniform(0,sec)))).isoformat(),
             "now": datetime.now(timezone.utc).isoformat()
         }
