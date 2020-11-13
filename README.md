@@ -43,5 +43,5 @@ main:                                       #Time interval of server checkups (i
   checkup_interval: 60                         application will check status of servers every 60 seconds
 ```
 
+I know that many things could be imporved however,as application is no longer needed I won't be developing it any further.
 
-As application is no longer needed i won't be developing it further hence repository will be Archived.
