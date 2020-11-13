@@ -11,36 +11,39 @@ from sqlalchemy import (Column, DateTime, Integer, MetaData, String, Table,
                         create_engine)
 from sqlalchemy.sql.sqltypes import Boolean
 
-urllib3.disable_warnings() #dissabling warings about lacking of HTTPS
+urllib3.disable_warnings()  # disabling warings about lacking of HTTPS
 
-with open('config.yml', mode='r') as file:
+# Load config file
+with open('example_config.yml', mode='r') as file:
     config = yaml.full_load(file)
 
+# Logining configuration
+logging.basicConfig(filename=config['logs']['filename'], filemode=config['logs']['filemode'], level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
 
-logging.basicConfig(filename=config['logs']['filename'], filemode=config['logs']['filemode'], level=logging.INFO, 
-            format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-##RocketChat WeebHook##
+##RocketChat WeebHook and headers##
 url = config['credentials']['ROCKETCHAT']['webhook']
 headers: dict = config['credentials']['ROCKETCHAT']['headers']
 
 
-###SQL engne and table maping
+# SQL engine and table maping
 engine = create_engine(config['credentials']['DB']['engine']+'://'+config['credentials']['DB']['username']+':'
-                            +config['credentials']['DB']['password']+'@'+config['credentials']['DB']['adress']+'/'+config['credentials']['DB']['db'])
-metadata= MetaData()
+                       + config['credentials']['DB']['password']+'@'+config['credentials']['DB']['adress']+'/'+config['credentials']['DB']['db'])
+metadata = MetaData()
 
-hearthbeat = Table('version_hearthbeat', metadata,
-    Column('server',String(10)),    
-    Column('date_time',DateTime),
-    Column('time_diff',String(30)),
-    Column('seconds_diff',Integer)
-)
+hearthbeat = Table(config['credentials']['DB']['table'], metadata,
+                   Column('server', String(10)),
+                   Column('date_time', DateTime),
+                   Column('time_diff', String(30)),
+                   Column('seconds_diff', Integer)
+                   )
+
 
 class OvRunCheck(object):
 
-    def __init__(self,name: str, adress: str, format: str='%Y-%m-%d %H:%M:%S', 
-                    last_run: str='1920-01-01T00:00:00.000+02:00', db_save: bool=True,
-                    notification: bool=True, msg_interval: int=5, notification_treshold: int=15) -> None:
+    def __init__(self, name: str, adress: str, format: str = '%Y-%m-%d %H:%M:%S',
+                 last_run: str = '1920-01-01T00:00:00.000+02:00', db_save: bool = True,
+                 notification: bool = True, msg_interval: int = 5, notification_treshold: int = 15) -> None:
         """
         Timer class used to check content of remote adress 
 
@@ -71,25 +74,28 @@ class OvRunCheck(object):
     def __repr__(self) -> str:
         return str(self.__dict__)
 
-
     @property
     def current_time(self):
         try:
-            response = requests.get(self.adress, verify=False).json() #Ignoring SSL as we do not send reacive anything sensitive
+            # Ignoring SSL as we do not send reacive anything sensitive
+            response = requests.get(self.adress, verify=False).json()
         except requests.exceptions.RequestException:
             logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
             response = None
 
         if response:
-            current_time = datetime.fromisoformat(response['data_version']['computed_refresh_date'])
+            current_time = datetime.fromisoformat(
+                response['data_version']['computed_refresh_date'])
         else:
-            current_time=datetime.fromisoformat('9999-12-12T00:00:00.000+00:00')
+            current_time = datetime.fromisoformat(
+                '9999-12-12T00:00:00.000+00:00')
         return current_time
 
     @property
     def now(self):
         try:
-            response = requests.get(self.adress, verify=False).json() #Ignoring SSL as we do not send reacive anything sensitive
+            # Ignoring SSL as we do not send reacive anything sensitive
+            response = requests.get(self.adress, verify=False).json()
         except requests.exceptions.RequestException:
             logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
             response = None
@@ -109,26 +115,38 @@ class OvRunCheck(object):
             try:
                 diff = self.current_time - self.last_run
                 if self.db_save == True:
-                    ins = hearthbeat.insert().values(server=self.name, date_time=self.now, time_diff=str(diff), seconds_diff=diff.total_seconds())
-                    conn = engine.connect()
-                    insert = conn.execute(ins)
-                    insert.close()
-                msg= f'{self.name} - OV run detected, previous run lasted {str(diff)}'
+                    ins = hearthbeat.insert().values(server=self.name, date_time=self.now,
+                                                     time_diff=str(diff), seconds_diff=diff.total_seconds())
+                    try:
+                        conn = engine.connect()
+                        insert = conn.execute(ins)
+                        insert.close()
+                    except:
+                        errmsg = f'{self.name} - Error during save to Database {sys.exc_info()[0]}'
+                        logging.error(errmsg)
+                        print(errmsg)
+                msg = f'{self.name} - OV run detected, previous run lasted {str(diff)}'
                 logging.info(msg)
                 print(msg)
                 self.last_run = self.current_time
                 self.inc = self.msg_interval
             except:
-                errmsg=f'{self.name} - Unknow error {sys.exc_info()[0]}'
-                logging.error(errmsg) 
+                errmsg = f'{self.name} - Unknow error {sys.exc_info()[0]}'
+                logging.error(errmsg)
                 print(errmsg)
-                #Exeption need to be replace with more specific, currently don't know what can happen here
+                # Exeption need to be replace with more specific, currently don't know what can happen here
         else:
-            ### This should be split into smaller method/fuction with more specific exeptions.
-            ### I know it work but it is horrible
+            # This should be split into smaller method/fuction with more specific exeptions.
+            # I know it work but it is horrible
             diff = self.now - self.last_run
-            if (diff > timedelta(minutes=self.notification_treshold) and self.notification == True and self.inc%self.msg_interval==0):
-                requests.post(url, data=json.dumps({"text":f"**{self.name}** - Ostatni przebieg OV {str(diff)} temu"}), headers= headers)
+            if (diff > timedelta(minutes=self.notification_treshold) and self.notification == True and self.inc % self.msg_interval == 0):
+                try:
+                    requests.post(url, data=json.dumps(
+                        {"text": f"**{self.name}** - Ostatni przebieg OV {str(diff)} temu"}), headers=headers)
+                except:
+                    errmsg = f'{self.name} - Error during sending notification {sys.exc_info()[0]}'
+                    logging.error(errmsg)
+                    print(errmsg)
             msg = f'{self.name} - No run occured, waiting 60s'
             logging.info(msg)
             print(msg)
@@ -140,9 +158,9 @@ serverlist: list = []
 print('Application starting')
 for key in config['servers']:
     serverlist.append(OvRunCheck(
-        name=config['servers'][key]['name'], 
+        name=config['servers'][key]['name'],
         adress=config['servers'][key]['adress'],
-        db_save=config['servers'][key]['db_save'], 
+        db_save=config['servers'][key]['db_save'],
         notification=config['servers'][key]['notification'],
         msg_interval=config['servers'][key]['msg_interval'],
         notification_treshold=config['servers'][key]['notification_treshold']))
@@ -152,8 +170,9 @@ for server in serverlist:
 
 loop = asyncio.get_event_loop()
 
+
 async def while_loop():
-    while True: 
+    while True:
         start = datetime.now()
         for server in serverlist:
             server.time_diff()

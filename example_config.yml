@@ -1,12 +1,23 @@
 servers:
   PROD:
     name: PROD
-    adress: example.com
-    db_save: true
-    notification: true
+    adress: http://127.0.0.1:5000/version
+    db_save: false
+    notification: false
     notification_treshold: 15
     msg_interval: 5
+credentials:
+  DB:
+    engine: mysql+mysqlconnector
+    username: database_user
+    password: database_password
+    adress: 127.0.0.1:3306
+    db: example_database
+    table: example_table
+  ROCKETCHAT:
+    webhook: https://rock.sever.example/hooks/random/random
+    headers: { "content-type": "application/json" }
 logs:
-  filename: OvRuns.log
+  filename: runs.log
   filemode: a
   level: logging.INFO
