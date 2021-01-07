@@ -4,7 +4,7 @@ Server Status Check
 
 <br/>
 My first application created to monitor status of external application via GET request. Example of server 
-response is saved to<br/>
+response<br/>
 
 ![example](readme/example.png)
 
