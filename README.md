@@ -5,7 +5,9 @@ Serrver Status Check
 black](https://img.shields.io/static/v1?label=code%20style&message=black&color=black&style=flat-square)](https://github.com/psf/black)&nbsp; 
 <br/>
 My first application created to monitor status of external application via GET request. Example of server 
-response is saved to [example.json](mock_server/example.json)
+response is saved to<br/>
+[![example.json](mock_server/example.json)]
+<br/>
 
 To simulate application working it is possible to start mock server `./mock_server/mock_server.py` which will generate needed responses.
 
