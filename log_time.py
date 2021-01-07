@@ -7,48 +7,70 @@ from inspect import signature
 import requests
 import urllib3
 import yaml
-from sqlalchemy import (Column, DateTime, Integer, MetaData, String, Table,
-                        create_engine)
+from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, create_engine
 from sqlalchemy.sql.sqltypes import Boolean
 
 urllib3.disable_warnings()  # disabling warings about lacking of HTTPS
 
 # Load config file
-with open('example_config.yml', mode='r') as file:
+with open("example_config.yml", mode="r") as file:
     config = yaml.full_load(file)
 
 # Logining configuration
-logging.basicConfig(filename=config['logs']['filename'], filemode=config['logs']['filemode'], level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
+logging.basicConfig(
+    filename=config["logs"]["filename"],
+    filemode=config["logs"]["filemode"],
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+)
 
 ##RocketChat WeebHook and headers##
-url = config['credentials']['ROCKETCHAT']['webhook']
-headers: dict = config['credentials']['ROCKETCHAT']['headers']
+url = config["credentials"]["ROCKETCHAT"]["webhook"]
+headers: dict = config["credentials"]["ROCKETCHAT"]["headers"]
 
 
 # SQL engine and table maping
-engine = create_engine(config['credentials']['DB']['engine']+'://'+config['credentials']['DB']['username']+':'
-                       + config['credentials']['DB']['password']+'@'+config['credentials']['DB']['adress']+'/'+config['credentials']['DB']['db'])
+engine = create_engine(
+    config["credentials"]["DB"]["engine"]
+    + "://"
+    + config["credentials"]["DB"]["username"]
+    + ":"
+    + config["credentials"]["DB"]["password"]
+    + "@"
+    + config["credentials"]["DB"]["adress"]
+    + "/"
+    + config["credentials"]["DB"]["db"]
+)
 metadata = MetaData()
 
-hearthbeat = Table(config['credentials']['DB']['table'], metadata,
-                   Column('server', String(10)),
-                   Column('date_time', DateTime),
-                   Column('time_diff', String(30)),
-                   Column('seconds_diff', Integer)
-                   )
+hearthbeat = Table(
+    config["credentials"]["DB"]["table"],
+    metadata,
+    Column("server", String(10)),
+    Column("date_time", DateTime),
+    Column("time_diff", String(30)),
+    Column("seconds_diff", Integer),
+)
 
 
 class OvRunCheck(object):
-
-    def __init__(self, name: str, adress: str, format: str = '%Y-%m-%d %H:%M:%S',
-                 last_run: str = '1920-01-01T00:00:00.000+02:00', db_save: bool = True,
-                 notification: bool = True, msg_interval: int = 5, notification_treshold: int = 15) -> None:
+    def __init__(
+        self,
+        name: str,
+        adress: str,
+        format: str = "%Y-%m-%d %H:%M:%S",
+        last_run: str = "1920-01-01T00:00:00.000+02:00",
+        db_save: bool = True,
+        notification: bool = True,
+        msg_interval: int = 5,
+        notification_treshold: int = 15,
+    ) -> None:
         """
-        Timer class used to check content of remote adress 
+        Timer class used to check content of remote adress
 
         :param name(str): name of server
-        :param adress(str): HTTP/HTTPS adress used in GET request 
+        :param adress(str): HTTP/HTTPS adress used in GET request
         :param format(str): Default: 'YYYY-MM-DD HH:MM:SS' Format used in .strftime to diplay current time in human form.
         :param last_run(str): Default: '1920-01-01 00:00:00' DateTime from which diff will be calulated.
         :param db_save(bool): Define if changes in computed time should be looged to DB. (Default: True)
@@ -68,8 +90,8 @@ class OvRunCheck(object):
 
     def __str__(self) -> str:
         fields = signature(self.__init__).parameters
-        values = ', '.join(str(getattr(self, f))for f in fields)
-        return f'''{self.name}({values})'''
+        values = ", ".join(str(getattr(self, f)) for f in fields)
+        return f"""{self.name}({values})"""
 
     def __repr__(self) -> str:
         return str(self.__dict__)
@@ -80,15 +102,15 @@ class OvRunCheck(object):
             # Ignoring SSL as we do not send reacive anything sensitive
             response = requests.get(self.adress, verify=False).json()
         except requests.exceptions.RequestException:
-            logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
+            logging.error(f"{self.name} - SSLError  {sys.exc_info()[0]}")
             response = None
 
         if response:
             current_time = datetime.fromisoformat(
-                response['data_version']['computed_refresh_date'])
+                response["data_version"]["computed_refresh_date"]
+            )
         else:
-            current_time = datetime.fromisoformat(
-                '9999-12-12T00:00:00.000+00:00')
+            current_time = datetime.fromisoformat("9999-12-12T00:00:00.000+00:00")
         return current_time
 
     @property
@@ -97,13 +119,13 @@ class OvRunCheck(object):
             # Ignoring SSL as we do not send reacive anything sensitive
             response = requests.get(self.adress, verify=False).json()
         except requests.exceptions.RequestException:
-            logging.error(f'{self.name} - SSLError  {sys.exc_info()[0]}')
+            logging.error(f"{self.name} - SSLError  {sys.exc_info()[0]}")
             response = None
 
         if response:
-            now = datetime.fromisoformat(response['data_version']['now'])
+            now = datetime.fromisoformat(response["data_version"]["now"])
         else:
-            now = datetime.fromisoformat('8999-12-12T00:00:00.000+00:00')
+            now = datetime.fromisoformat("8999-12-12T00:00:00.000+00:00")
         return now
 
     def show_time(self) -> str:
@@ -115,23 +137,27 @@ class OvRunCheck(object):
             try:
                 diff = self.current_time - self.last_run
                 if self.db_save == True:
-                    ins = hearthbeat.insert().values(server=self.name, date_time=self.now,
-                                                     time_diff=str(diff), seconds_diff=diff.total_seconds())
+                    ins = hearthbeat.insert().values(
+                        server=self.name,
+                        date_time=self.now,
+                        time_diff=str(diff),
+                        seconds_diff=diff.total_seconds(),
+                    )
                     try:
                         conn = engine.connect()
                         insert = conn.execute(ins)
                         insert.close()
                     except:
-                        errmsg = f'{self.name} - Error during save to Database {sys.exc_info()[0]}'
+                        errmsg = f"{self.name} - Error during save to Database {sys.exc_info()[0]}"
                         logging.error(errmsg)
                         print(errmsg)
-                msg = f'{self.name} - OV run detected, previous run lasted {str(diff)}'
+                msg = f"{self.name} - OV run detected, previous run lasted {str(diff)}"
                 logging.info(msg)
                 print(msg)
                 self.last_run = self.current_time
                 self.inc = self.msg_interval
             except:
-                errmsg = f'{self.name} - Unknow error {sys.exc_info()[0]}'
+                errmsg = f"{self.name} - Unknow error {sys.exc_info()[0]}"
                 logging.error(errmsg)
                 print(errmsg)
                 # Exeption need to be replace with more specific, currently don't know what can happen here
@@ -139,15 +165,26 @@ class OvRunCheck(object):
             # This should be split into smaller method/fuction with more specific exeptions.
             # I know it work but it is horrible
             diff = self.now - self.last_run
-            if (diff > timedelta(minutes=self.notification_treshold) and self.notification == True and self.inc % self.msg_interval == 0):
+            if (
+                diff > timedelta(minutes=self.notification_treshold)
+                and self.notification == True
+                and self.inc % self.msg_interval == 0
+            ):
                 try:
-                    requests.post(url, data=json.dumps(
-                        {"text": f"**{self.name}** - Ostatni przebieg OV {str(diff)} temu"}), headers=headers)
+                    requests.post(
+                        url,
+                        data=json.dumps(
+                            {
+                                "text": f"**{self.name}** - Ostatni przebieg OV {str(diff)} temu"
+                            }
+                        ),
+                        headers=headers,
+                    )
                 except:
-                    errmsg = f'{self.name} - Error during sending notification {sys.exc_info()[0]}'
+                    errmsg = f"{self.name} - Error during sending notification {sys.exc_info()[0]}"
                     logging.error(errmsg)
                     print(errmsg)
-            msg = f'{self.name} - No run occured, waiting 60s'
+            msg = f"{self.name} - No run occured, waiting 60s"
             logging.info(msg)
             print(msg)
             self.inc += 1
@@ -155,16 +192,19 @@ class OvRunCheck(object):
 
 serverlist: list = []
 
-print('Application starting')
-for key in config['servers']:
-    serverlist.append(OvRunCheck(
-        name=config['servers'][key]['name'],
-        adress=config['servers'][key]['adress'],
-        db_save=config['servers'][key]['db_save'],
-        notification=config['servers'][key]['notification'],
-        msg_interval=config['servers'][key]['msg_interval'],
-        notification_treshold=config['servers'][key]['notification_treshold']))
-print('Loaded objects:')
+print("Application starting")
+for key in config["servers"]:
+    serverlist.append(
+        OvRunCheck(
+            name=config["servers"][key]["name"],
+            adress=config["servers"][key]["adress"],
+            db_save=config["servers"][key]["db_save"],
+            notification=config["servers"][key]["notification"],
+            msg_interval=config["servers"][key]["msg_interval"],
+            notification_treshold=config["servers"][key]["notification_treshold"],
+        )
+    )
+print("Loaded objects:")
 for server in serverlist:
     print(server)
 
@@ -178,7 +218,8 @@ async def while_loop():
             server.time_diff()
         end = datetime.now()
         elaps = end - start
-        await asyncio.sleep(config['main']['checkup_interval']-elaps.total_seconds())
+        await asyncio.sleep(config["main"]["checkup_interval"] - elaps.total_seconds())
+
 
 loop.create_task(while_loop())
 loop.run_forever()
